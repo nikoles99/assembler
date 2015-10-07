@@ -15,13 +15,13 @@ error      db 'Error!',13,10,'$'
 p_error    dd error       
 
 buffer_1     db 4096 dup(0)   
-p_buffer_1   dd buffer_1   
+
 
 buffer_2     db 4096 dup(0)   
-p_buffer_2   dd buffer_2 
+
 
 buffer_3     db 4096 dup(0)   
-p_buffer_3   dd buffer_3 
+
         
 handle     dw 0   
 
@@ -39,7 +39,8 @@ begin:
     mov ds, ax
     call openFile1
     call openFile2
-    call openFile3            
+    call openFile3    
+    jmp compareFile        
     jmp exit
     
 openFile1:   
@@ -49,7 +50,7 @@ openFile1:
     int 21h
     jnc readFile1                  
     call error_msg          
-    jmp exit  
+   
 
 openFile2:   
     mov ah,3Dh              
@@ -58,7 +59,7 @@ openFile2:
     int 21h
     jnc readFile2                  
     call error_msg          
-    jmp exit 
+  
     
 openFile3:   
     mov ah,3Dh              
@@ -67,16 +68,16 @@ openFile3:
     int 21h 
     jnc readFile3                  
     call error_msg          
-    jmp exit      
+        
                 
 readFile1:
     mov [handle],ax         
     mov bx,ax               
     mov ah,3Fh              
-    mov dx,p_buffer_1           
+    lea dx,buffer_1           
     mov cx,80               
     int 21h                 
-    jnc printFile                
+    jnc printFile1                
     call error_msg          
     jmp close_file  
     
@@ -84,10 +85,10 @@ readFile2:
     mov [handle],ax         
     mov bx,ax               
     mov ah,3Fh              
-    mov dx,p_buffer_2           
+    lea dx,buffer_2           
     mov cx,80               
     int 21h                 
-    jnc printFile                
+    jnc printFile2                
     call error_msg          
     jmp close_file
     
@@ -95,20 +96,30 @@ readFile3:
     mov [handle],ax         
     mov bx,ax               
     mov ah,3Fh              
-    mov dx,p_buffer_3           
+    lea dx,buffer_3           
     mov cx,80               
     int 21h                 
-    jnc compareFile               
+    jnc printFile3              
     call error_msg          
     jmp close_file        
  
-printFile:
-    mov bx,p_buffer_1
+printFile1:
+    lea bx,buffer_1
     add bx,ax               
     mov byte[bx],'$'         
-    mov ah,9
-    mov dx,p_buffer_1
-    int 21h 
+    call     close_file
+    
+    printFile2:
+    lea bx,buffer_2
+    add bx,ax               
+    mov byte[bx],'$'         
+    call     close_file
+    
+    printFile3:
+    lea bx,buffer_3
+    add bx,ax               
+    mov byte[bx],'$'         
+    call     close_file
 
 close_file:
     mov ah,3Eh              
@@ -124,8 +135,8 @@ compareFile:
     mov     es,ax
     
     mov     cx,len
-    mov     si,offset p_buffer_1
-    mov     di, offset p_buffer_2
+    lea     si, buffer_1
+    lea     di, buffer_2
     repe cmpsb
     jne     NO
     
@@ -153,5 +164,14 @@ error_msg:
     mov ah,9
     mov dx,p_error
     int 21h                 
-    ret
-
+    ret  
+    
+;getNextCharacter:
+;    mov ah, 40H
+;    mov bx, handle
+;    mov dx,1
+;    mov al, 1
+;    int 21h    
+;    inc n  
+;    mov dx,n   
+;    jmp readFile1  
